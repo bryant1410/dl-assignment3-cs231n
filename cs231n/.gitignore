@@ -1,3 +1,7 @@
 build
 im2col_cython.c
 *.so
+
+datasets/coco_captioning
+datasets/pretrained_model.h5
+datasets/tiny-imagenet-100-A
