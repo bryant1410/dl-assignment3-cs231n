@@ -77,7 +77,7 @@ def rnn_step_backward(dnext_h, cache):
   # noinspection PyTypeChecker
   dWx = np.dot(x.T, do)
   # noinspection PyTypeChecker
-  db = np.sum(do, axis=0, keepdims=True)
+  db = np.sum(do, axis=0)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -116,7 +116,7 @@ def rnn_forward(x, h0, Wx, Wh, b):
   h = np.empty((N, T, H))
 
   prev_h = h0
-  for t in range(T):
+  for t in xrange(T):
     h[:, t, :], cache_step = rnn_step_forward(x[:, t, :], prev_h, Wx, Wh, b)
     prev_h = h[:, t, :]
     cache.append(cache_step)
@@ -146,7 +146,26 @@ def rnn_backward(dh, cache):
   # sequence of data. You should use the rnn_step_backward function that you   #
   # defined above.                                                             #
   ##############################################################################
-  pass
+  N, T, H = dh.shape
+  D = cache[0][0].shape[1]
+
+  dx = np.empty((N, T, D))
+  dWx = np.zeros((D, H))
+  dWh = np.zeros((H, H))
+  db = np.zeros(H)
+
+  dprev_h = np.zeros((N, H))
+
+  for t in xrange(T - 1, -1, -1):
+    dout_step = dh[:, t, :] + dprev_h
+    dx[:, t, :], dprev_h, dWx_step, dWh_step, db_step = rnn_step_backward(dout_step, cache.pop())
+    dWx += dWx_step
+    dWh += dWh_step
+    db += db_step
+
+  dh0 = dprev_h
+
+  assert cache == []
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
