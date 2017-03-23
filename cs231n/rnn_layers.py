@@ -339,7 +339,7 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
   dWx = x.T.dot(da)
   dprev_h = da.dot(Wh.T)
   dWh = prev_h.T.dot(da)
-  db = np.sum(da, axis=0, keepdims=True)
+  db = np.sum(da, axis=0)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -374,7 +374,19 @@ def lstm_forward(x, h0, Wx, Wh, b):
   # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
   # You should use the lstm_step_forward function that you just defined.      #
   #############################################################################
-  pass
+  cache = []
+
+  N, T, _ = x.shape
+  H = h0.shape[1]
+
+  h = np.empty((N, T, H))
+
+  prev_h = h0
+  prev_c = np.zeros((N, H))
+  for t in xrange(T):
+    h[:, t, :], prev_c, cache_step = lstm_step_forward(x[:, t, :], prev_h, prev_c, Wx, Wh, b)
+    prev_h = h[:, t, :]
+    cache.append(cache_step)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -402,7 +414,26 @@ def lstm_backward(dh, cache):
   # TODO: Implement the backward pass for an LSTM over an entire timeseries.  #
   # You should use the lstm_step_backward function that you just defined.     #
   #############################################################################
-  pass
+  N, T, H = dh.shape
+  D = cache[0][0].shape[1]
+
+  dx = np.empty((N, T, D))
+  dWx = np.zeros((D, 4 * H))
+  dWh = np.zeros((H, 4 * H))
+  db = np.zeros(4 * H)
+
+  dprev_h = np.zeros((N, H))
+  dprev_c = np.zeros((N, H))
+  for t in xrange(T - 1, -1, -1):
+    dprev_h_total = dh[:, t, :] + dprev_h
+    dx[:, t, :], dprev_h, dprev_c, dWx_step, dWh_step, db_step = lstm_step_backward(dprev_h_total, dprev_c, cache.pop())
+    dWx += dWx_step
+    dWh += dWh_step
+    db += db_step
+
+  dh0 = dprev_h
+
+  assert cache == []
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
